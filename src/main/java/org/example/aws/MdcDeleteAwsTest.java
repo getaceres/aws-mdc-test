@@ -2,6 +2,7 @@ package org.example.aws;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
@@ -65,7 +66,7 @@ public class MdcDeleteAwsTest {
   }
 
   public static void main(String[] args) throws URISyntaxException, InterruptedException {
-    MDC.put(KEY, "myValue");
+    MDC.put(KEY, UUID.randomUUID().toString());
 
     CompletableFuture.runAsync(MdcDeleteAwsTest::doWork, executor)
         .whenCompleteAsync((r, e) -> log.info("Finished doing work with correlation {}", MDC.get(KEY)), executor);
@@ -83,19 +84,12 @@ public class MdcDeleteAwsTest {
 
     CompletableFuture.supplyAsync(() -> sqsClient.receiveMessage(receiveMessageRequest(queueUrl)).join(), executor)
         .whenComplete((response, error) -> {
-          log.info("Got blocking receive response with {} messages and correlation ", response.messages().size(), MDC.get(KEY));
+          log.info("Got blocking receive response with {} messages and correlation {}", response.messages().size(), MDC.get(KEY));
         });
 
     sqsClient.receiveMessage(receiveMessageRequest(queueUrl)).whenComplete((response, error) -> {
-      log.info("Received asynchronous receive response with {} messages and correlation", response.messages().size(), MDC.get(KEY));
+      log.info("Received asynchronous receive response with {} messages and correlation {}", response.messages().size(), MDC.get(KEY));
     });
-
-    Thread.sleep(TimeUnit.SECONDS.toMillis(5));
-
-    CompletableFuture.supplyAsync(() -> sqsClient.receiveMessage(receiveMessageRequest(queueUrl)).join(), executor)
-        .whenComplete((response, error) -> {
-          log.info("Got blocking receive response after asynchronous with {} messages and correlation ", response.messages().size(), MDC.get(KEY));
-        });
 
   }
 
