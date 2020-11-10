@@ -64,7 +64,7 @@ public class MdcDeleteAwsTest {
         .visibilityTimeout(30).build();
   }
 
-  public static void main(String[] args) throws URISyntaxException {
+  public static void main(String[] args) throws URISyntaxException, InterruptedException {
     MDC.put(KEY, "myValue");
 
     CompletableFuture.runAsync(MdcDeleteAwsTest::doWork, executor)
@@ -89,6 +89,8 @@ public class MdcDeleteAwsTest {
     sqsClient.receiveMessage(receiveMessageRequest(queueUrl)).whenComplete((response, error) -> {
       log.info("Received asynchronous receive response with {} messages and correlation", response.messages().size(), MDC.get(KEY));
     });
+
+    Thread.sleep(TimeUnit.SECONDS.toMillis(5));
 
     CompletableFuture.supplyAsync(() -> sqsClient.receiveMessage(receiveMessageRequest(queueUrl)).join(), executor)
         .whenComplete((response, error) -> {
